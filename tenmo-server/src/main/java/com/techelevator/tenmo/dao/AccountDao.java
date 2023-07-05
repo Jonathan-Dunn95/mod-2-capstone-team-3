@@ -12,5 +12,6 @@ public interface AccountDao {
     Account getAccountById(int accountId);
 
     BigDecimal getAccountBalance(int accountId);
+//    Account create(int user_id);
 
 }

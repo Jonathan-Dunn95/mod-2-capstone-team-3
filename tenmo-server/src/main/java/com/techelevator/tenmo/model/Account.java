@@ -1,9 +1,12 @@
 package com.techelevator.tenmo.model;
 
+import javax.validation.constraints.Positive;
+import java.io.Serializable;
 import java.math.BigDecimal;
 
-public class Account {
+public class Account implements Serializable {
 
+    @Positive
     private int accountId;
     private int userId;
     private BigDecimal balance;
@@ -34,5 +37,9 @@ public class Account {
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    public void setAccountId(int accountId) {
+        this.accountId = accountId;
     }
 }
