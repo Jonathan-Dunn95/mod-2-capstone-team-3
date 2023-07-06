@@ -1,5 +1,6 @@
 package com.techelevator.tenmo.dao;
 
+import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.Transfer;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -43,28 +44,39 @@ public class JdbcTransferDao implements TransferDao {
 
     @Override
     @ResponseStatus(HttpStatus.ACCEPTED)    //cant find approved status
-    public void send(int senderId, int receiverId, BigDecimal transferAmount){
-//        if (receiverId == senderId){
-//            //cannot send to self id
-//        }
-        String sql = "UPDATE account SET balance = (balance+?) WHERE account_id = ?";// increase receiver balance
-        jdbcTemplate.update(sql, transferAmount, receiverId);
+    public boolean send(int senderId, int receiverId, BigDecimal transferAmount){
+        if (receiverId != senderId) {
+            String sql = "UPDATE account " +
+                    "SET balance = (balance+?) " +
+                    "WHERE account_id = ? " +
+                    "AND ? !> (SELECT balance FROM account WHERE account_id = ?)";// increase receiver balance
+            jdbcTemplate.update(sql, transferAmount, receiverId, transferAmount, senderId);
 
-        String sql2 = "UPDATE account SET balance = (balance-?) WHERE account_id = ?";        //decrease senders balance
-        jdbcTemplate.update(sql2, transferAmount, senderId);
-    }
+            String sql2 = "UPDATE account " +
+                    "SET balance = (balance-?) " +
+                    "WHERE account_id = ?" +
+                    "AND ? !> (SELECT balance FROM account WHERE account_id = ?)";        //decrease senders balance
+            jdbcTemplate.update(sql2, transferAmount, senderId, transferAmount, senderId);
 
-    @Override
-    public boolean create(Transfer transfer){
-        String sql = "INSERT INTO transfer (sender_id, receiver_id, transfer_amount) " +
-                "VALUES (?, ?, ?)";
-        try{
-           jdbcTemplate.update(sql, transfer.getSenderId(), transfer.getReceiverId(), transfer.getTransferAmount());
-        }catch (DataAccessException dae){
-            return false;
+            String sql3 = "INSERT INTO transfer (sender_id, receiver_id, transfer_amount) " +
+                    "VALUES (?, ?, ?)";
+            jdbcTemplate.update(sql3, senderId, receiverId, transferAmount);
+            return true;
         }
-        return true;
+        return false;
     }
+
+//    @Override
+//    public boolean create(int senderId, int receiverId, BigDecimal transferAmount) {
+//        String sql = "INSERT INTO transfer (sender_id, receiver_id, transfer_amount) " +
+//                "VALUES (?, ?, ?)";
+//        try{
+//           jdbcTemplate.update(sql, transfer.getSenderId(), transfer.getReceiverId(), transfer.getTransferAmount());
+//        }catch (DataAccessException dae){
+//            return false;
+//        }
+//        return true;
+//    }
 
     Transfer mapRowToTransfer(SqlRowSet sq){
         Transfer transfer = new Transfer();

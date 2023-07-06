@@ -8,6 +8,6 @@ import java.util.List;
 public interface TransferDao {
     List<Transfer> getTransfersByAccountId(int accountId);
     Transfer getTransfer(int transferId);
-    void send(int senderId, int receiverId, BigDecimal transferAmount);
-    boolean create(Transfer transfer);
+    boolean send(int senderId, int receiverId, BigDecimal transferAmount);
+//    boolean create(Transfer transfer);
 }
