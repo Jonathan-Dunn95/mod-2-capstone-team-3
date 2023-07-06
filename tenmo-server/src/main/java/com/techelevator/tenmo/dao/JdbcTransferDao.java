@@ -22,11 +22,12 @@ public class JdbcTransferDao implements TransferDao {
     }
 
     @Override
-    public List<Transfer> getTransfersByAccountId(int accountId){       //add subqueries for user_ids
+    public List<Transfer> getTransfersByUserId(int userId){
         List<Transfer> transfers = new ArrayList<>();
         String sql = "SELECT transfer_id, sender_id, receiver_id, transfer_amount " +
-                "FROM transfer WHERE account_id = ?";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, Transfer.class, accountId);
+                "FROM transfer WHERE  sender_id = ? " +
+                "OR receiver_id = ?";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, Transfer.class, userId, userId);
         while(results.next()){
             Transfer transfer = mapRowToTransfer(results);
             transfers.add(transfer);
@@ -38,8 +39,12 @@ public class JdbcTransferDao implements TransferDao {
     public Transfer getTransfer(int transferId){
         String sql = "SELECT transfer_id, sender_id, receiver_id, transfer_amount " +
                 "FROM transfer WHERE transfer_id = ?";
-        Transfer result = jdbcTemplate.queryForObject(sql, Transfer.class, transferId);
-        return result;
+        SqlRowSet result = jdbcTemplate.queryForRowSet(sql, transferId);
+        if(result.next()){
+            return mapRowToTransfer(result);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -48,14 +53,14 @@ public class JdbcTransferDao implements TransferDao {
         if (receiverId != senderId) {
             String sql = "UPDATE account " +
                     "SET balance = (balance+?) " +
-                    "WHERE account_id = ? " +
-                    "AND ? !> (SELECT balance FROM account WHERE account_id = ?)";// increase receiver balance
+                    "WHERE account_id = (SELECT account_id FROM account WHERE user_id = ?) " +
+                    "AND ? <= (SELECT balance FROM account WHERE user_id = ?)";
             jdbcTemplate.update(sql, transferAmount, receiverId, transferAmount, senderId);
 
             String sql2 = "UPDATE account " +
                     "SET balance = (balance-?) " +
-                    "WHERE account_id = ?" +
-                    "AND ? !> (SELECT balance FROM account WHERE account_id = ?)";        //decrease senders balance
+                    "WHERE account_id = (SELECT account_id FROM account WHERE user_id = ?)" +
+                    "AND ? <= (SELECT balance FROM account WHERE user_id = ?)";
             jdbcTemplate.update(sql2, transferAmount, senderId, transferAmount, senderId);
 
             String sql3 = "INSERT INTO transfer (sender_id, receiver_id, transfer_amount) " +
@@ -65,18 +70,6 @@ public class JdbcTransferDao implements TransferDao {
         }
         return false;
     }
-
-//    @Override
-//    public boolean create(int senderId, int receiverId, BigDecimal transferAmount) {
-//        String sql = "INSERT INTO transfer (sender_id, receiver_id, transfer_amount) " +
-//                "VALUES (?, ?, ?)";
-//        try{
-//           jdbcTemplate.update(sql, transfer.getSenderId(), transfer.getReceiverId(), transfer.getTransferAmount());
-//        }catch (DataAccessException dae){
-//            return false;
-//        }
-//        return true;
-//    }
 
     Transfer mapRowToTransfer(SqlRowSet sq){
         Transfer transfer = new Transfer();

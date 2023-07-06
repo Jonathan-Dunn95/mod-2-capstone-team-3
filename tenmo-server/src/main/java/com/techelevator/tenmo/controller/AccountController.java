@@ -39,9 +39,9 @@ public class AccountController {
         return accountDao.getAccountBalance(accountId);
     }
 
-    @RequestMapping(value = "/transfer/{account_id}", method = RequestMethod.GET)
-    public List<Transfer> listTransfers (@PathVariable("account_id") int accountId){
-        return transferDao.getTransfersByAccountId(accountId);
+    @RequestMapping(value = "/transfer", method = RequestMethod.GET)
+    public List<Transfer> listTransfers (@RequestBody int userId){
+        return transferDao.getTransfersByUserId(userId);
     }
 
     @RequestMapping(value = "/transfer/{transfer_id}", method = RequestMethod.GET)
