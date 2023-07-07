@@ -22,26 +22,26 @@ public class JdbcAccountDao implements AccountDao {
     }
 
     @Override
-    public BigDecimal getAccountBalance(int accountId) {
+    public BigDecimal getAccountBalance(int userId) {
         String sql = "SELECT balance " +
                 "FROM account " +
-                "WHERE account_id = ?";
-        BigDecimal balance = jdbcTemplate.queryForObject(sql, BigDecimal.class, accountId);
+                "WHERE user_id = ?";
+        BigDecimal balance = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId);
         return balance;
     }
 
-    @Override
-    public Account getAccountById(int accountId) {
-        String sql = "SELECT account_id, user_id, balance " +
-                "FROM account " +
-                "WHERE account_id = ?";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accountId);
-        if (results.next()) {
-            return mapRowToAccount(results);
-        } else {
-            return null;
-        }
-    }
+//    @Override
+//    public Account getAccountById(int accountId) {
+//        String sql = "SELECT account_id, user_id, balance " +
+//                "FROM account " +
+//                "WHERE account_id = ?";
+//        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accountId);
+//        if (results.next()) {
+//            return mapRowToAccount(results);
+//        } else {
+//            return null;
+//        }
+//    }
 
     @Override
     public List<Account> getAllAccounts() {

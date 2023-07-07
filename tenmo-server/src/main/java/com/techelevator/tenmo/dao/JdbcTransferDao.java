@@ -25,9 +25,9 @@ public class JdbcTransferDao implements TransferDao {
     public List<Transfer> getTransfersByUserId(int userId){
         List<Transfer> transfers = new ArrayList<>();
         String sql = "SELECT transfer_id, sender_id, receiver_id, transfer_amount " +
-                "FROM transfer WHERE  sender_id = ? " +
+                "FROM transfer WHERE sender_id = ? " +
                 "OR receiver_id = ?";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, Transfer.class, userId, userId);
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId, userId);
         while(results.next()){
             Transfer transfer = mapRowToTransfer(results);
             transfers.add(transfer);
@@ -49,26 +49,26 @@ public class JdbcTransferDao implements TransferDao {
 
     @Override
     @ResponseStatus(HttpStatus.ACCEPTED)    //cant find approved status
-    public boolean send(int senderId, int receiverId, BigDecimal transferAmount){
-        if (receiverId != senderId) {
+    public Transfer send(int id, Transfer transfer) {
+
+            String sql3 = "INSERT INTO transfer (sender_id, receiver_id, transfer_amount) " +
+                    "VALUES (?, ?, ?) RETURNING transfer_id";
+            int transferId = jdbcTemplate.queryForObject(sql3, Integer.class, id, transfer.getReceiverId(), transfer.getTransferAmount());
+            Transfer newTransfer = getTransfer(transferId);
+
             String sql = "UPDATE account " +
                     "SET balance = (balance+?) " +
                     "WHERE account_id = (SELECT account_id FROM account WHERE user_id = ?) " +
                     "AND ? <= (SELECT balance FROM account WHERE user_id = ?)";
-            jdbcTemplate.update(sql, transferAmount, receiverId, transferAmount, senderId);
+            jdbcTemplate.update(sql, newTransfer.getTransferAmount(), newTransfer.getReceiverId(), newTransfer.getTransferAmount(), id);
 
             String sql2 = "UPDATE account " +
                     "SET balance = (balance-?) " +
                     "WHERE account_id = (SELECT account_id FROM account WHERE user_id = ?)" +
                     "AND ? <= (SELECT balance FROM account WHERE user_id = ?)";
-            jdbcTemplate.update(sql2, transferAmount, senderId, transferAmount, senderId);
+            jdbcTemplate.update(sql2, newTransfer.getTransferAmount(), id, newTransfer.getTransferAmount(), id);
 
-            String sql3 = "INSERT INTO transfer (sender_id, receiver_id, transfer_amount) " +
-                    "VALUES (?, ?, ?)";
-            jdbcTemplate.update(sql3, senderId, receiverId, transferAmount);
-            return true;
-        }
-        return false;
+            return newTransfer;
     }
 
     Transfer mapRowToTransfer(SqlRowSet sq){
